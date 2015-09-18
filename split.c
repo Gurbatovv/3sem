@@ -5,8 +5,6 @@
 #define  SizeStr 117
 #define  SizeDelim  17
 
-
-
 void Split (char *string, char *delimeters, char ***tok, int *count)
 {
     *tok = NULL;
@@ -17,6 +15,10 @@ void Split (char *string, char *delimeters, char ***tok, int *count)
     
     while (s != NULL)
     {
+        /*
+         * FIXIT:
+         * вместо malloc + копирование используйте realloc
+         */
         temp = (char**) malloc((unsigned int)sizeof(char*) * (*count + 1));
         for (i = 0; i < *count; i++)
         {
@@ -34,8 +36,6 @@ void Split (char *string, char *delimeters, char ***tok, int *count)
     return;
 }
 
-
-
 int main()
 {
     char *delimeters;
@@ -51,5 +51,9 @@ int main()
     {
         printf("%s\n", tok[i]);
     }
+    /*
+     * FIXIT:
+     * Нужно освободить выделенную вами память
+     */
     return 0;
 }
