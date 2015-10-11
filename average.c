@@ -2,211 +2,130 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
-#include <math.h>
 
-/*
- * Чтобы увидеть ускорение от использования многопоточности необходимо, чтобы время работы каждой нити было много больше времени её создания.
- * Поэтому следует находить среднее и дисперсию из N ~ 10 ^ 7 - 10 ^ 8 элементов.
- * Число элементов и число нитей должны быть вынесены в отдельные константы:
- * #define ElementsCount 100000000
- * #define ThreadsCount  4
- * Так нужно сделать для того, чтобы изменив в одно месте эту константу вы могли найти зависимость времени работы программы от числа используемых нитей.
- * 
- * Массив такого большого размера можно выделить только в куче с помощью malloc.
- */
 
-double  x, *a , r;
-long int  n, k;
-double m[5] = {0, 0, 0, 0, 0};
-double o[4] = {0, 0, 0, 0};
-double h[5] = {0, 0, 0, 0, 0};
-double t[5] = {0, 0, 0, 0, 0};
-double u[5] = {0, 0, 0, 0, 0};
+#define ElementsCount 1000
+#define ThreadsCount  4
 
-/*
- * Зачем здесь сортировка?
- * Чтобы найти среднее и дисперсию достаточно O(n) операций, тогда как для сортировки вы используете аж O(n^2).
- * Сортировка явно здесь лишняя.
- */
 
-/* сортируем массив данных*/
-typedef int (*MyComp)(double, double);
-int g(double c, double b)
+double *a;
+long int j;
+double m[ThreadsCount + 1];
+double o[ThreadsCount + 1];
+  
+struct Task
 {
-    if (c < b)
-        return 1;
-    else 
-        return 0;
-}      
+  int b, c;
+};
 
-void sort(double* c, int n, MyComp comp)
+struct Thread
 {
-    int i, j, y;
-    for(i = 0; i < n; i++)
+  pthread_t id;
+  int result;
+};
+
+
+void* my_thread(void* task) 
+{
+    long int i;
+    for(i = ((struct Task*)task) -> c; i < ((struct Task*)task) -> b; i++)
     {
-        for(j = 0; j < n - 1; j++)
-        {
-            if (comp(a[j], a[j + 1]) == 0)
-            {
-                y = a[j + 1];
-                a[j + 1] = a[j];
-                a[j] = y;
-            }
-        }
-    }   
-}
-
-/*
- * У вас 4 ф-и делают ровно то же самое. Вам необходимо их параметризовать.
- * Создайте структуру Task, которая будет хранить интервал, в котором данной нити надо суммировать результат.
- * Когда создаёте нить последним параметром можно передать эту структуру в ф-ю my_thread.
- */
-
-void* my_thread1(void* dummy) 
-{
-    int i, j, d;
-    pthread_t my_thread_id;
-    for (i = 0; i < k; i++)
-    {
-        m[1] = m[1] + a[i]; /*для нахождения среднего*/
+        m[j] = m[j] + a[i]; 
     } 
-    d = 0;
-    for (j = 0; j < (n - 1); j++)
-    {
-    if (a[j] < (a[0] + r)) /*считаем количество элементов массива входящих в данный интервал r  это шаг*/
-    {
-        o[1]++;
-    }  
-    }
-    h[1] = a[0] + r/ 2; /*ищем середину интервала*/
-    t[1] = h[1] * o[1];
     return NULL;
 }
 
-void* my_thread2(void* dummy) 
+void* my_thread1(void* task) 
 {
-    int i, j, d;
+    long int i;
     pthread_t my_thread_id;
-    for (i = k; i < (2 * k); i++)
+    for (i = ((struct Task*)task) -> c; i < ((struct Task*)task) -> b; i++)
     {
-        m[2] = m[2] + a[i];
+        o[j] = o[j] + (a[i] - m[ThreadsCount + 1]) * (a[i] - m[ThreadsCount + 1]);
     } 
-    d = o[1];
-    for (j = d; j < n; j++)
-    {
-    if (a[j] <= (a[0] + (2 * r)))
-    {
-        o[2] = o[2] + 1;
-    }
-    }
-    h[2] = a[0] + 3 * r/ 2;
-    t[2] = h[2] * o[2];
     return NULL;
 }
 
-void* my_thread3(void* dummy) 
-{
-    int i, j, d;
-    pthread_t my_thread_id;
-    for (i = (2 * k); i < (3 * k); i++)
-    {
-        m[3] = m[3] + a[i];
-    } 
-    d = o[2] + o[1];
-    for (j = d; j < n; j++)
-    {
-    if (a[j] <= (a[0] + (3 * r)))
-    {
-        o[3] = o[3] + 1;
-    }
-    }
-    h[3] = a[0] + 5 * r/ 2;
-    t[3] = h[3] * o[3];
-    return NULL;
-}
-
-void* my_thread4(void* dummy) 
-{
-    int j = 0;
-    pthread_t my_thread_id;
-    for (j = (3 * k) ; j < n; j++)
-    {
-        m[4] = m[4] + a[j];
-    } 
-    o[0] = n - (o[1] + o[2] + o[3]);
-    h[0] = a[0] + 7 * r/ 2;
-    t[4] = h[0] * o[0];
-    return NULL;
-}
 
 int main()
 {
     int i;
+    struct Task tasks[ElementsCount];
+    struct Thread threads[ElementsCount];
     srand(time(NULL));
-    pthread_t thread_id1 , thread_id2, thread_id3, thread_id4, my_thread_id;
-    int result;
-    scanf("%ld" , &n);
-    /*
-     * 4 надо заменить на константу ThreadsCount
-     */
-    k = n / 4;
-    a = (double *)malloc(n*sizeof(double));
-    for (i = 0; i < n; i++)
-    a[i] = 1 + rand() % 100;  
-    sort(a, n, g);
-    r = (a[n - 1] - a[0]) / 4;
+    
+    
+    for(i = 0; i < ThreadsCount; i++)
+    {
+        tasks[i].c = i * ElementsCount / ThreadsCount ;
+        tasks[i].b = (i + 1) * ElementsCount / ThreadsCount;
+    }
+    
+    if (ElementsCount % ThreadsCount != 0)
+    {
+        tasks[ThreadsCount - 1].b = ElementsCount;
+    }
+   
+    a = (double *)malloc(ElementsCount*sizeof(double));
+    
+    for (i = 0; i < ElementsCount; i++)
+    a[i] = 1 + rand() % 2;  
+    
     printf("Данные: ");
-    for (i = 0; i < n; i++)
+    
+    for (i = 0; i < ElementsCount; i++)
+    {
         printf("%f " , a[i]);
+    }    
     printf("\n");
     
-    result = pthread_create(&thread_id1 , 
-                            (pthread_attr_t *)NULL , 
-                            my_thread1 ,
-                            NULL);
     
-    
-    result = pthread_create(&thread_id2 , 
-                            (pthread_attr_t *)NULL , 
-                            my_thread2 ,
-                            NULL);
-    
-    result = pthread_create(&thread_id3 , 
-                            (pthread_attr_t *)NULL , 
-                            my_thread3 ,
-                            NULL);
-    
-    result = pthread_create(&thread_id4 , 
-                            (pthread_attr_t *)NULL , 
-                            my_thread4 ,
-                            NULL);
-    pthread_join(thread_id1 , (void **) NULL);
-    pthread_join(thread_id2 , (void **) NULL);
-    pthread_join(thread_id3 , (void **) NULL);
-    pthread_join(thread_id4 , (void **) NULL);
-    
-    /*
-     * В коде вместо 5 используйте константу ElementsCount.
-     */
-    for (i = 1; i < 5; i++)
+    for(j = 0; j <= ThreadsCount; j++)
     {
-        m[0] = m[0] + m[i];
-        t[0] = t[0] + t[i];
-    } 
-    x = t[0] / n;
-    
-    /*
-     * Дисперсию тоже следует считать в ThreadsCount потоков. Иначе ускорения от использования многопоточности вы не получите. 
-     */
-    for (i = 1; i < 5; i++)
+        threads[j].result = pthread_create(&(threads[j].id) ,
+                                     (pthread_attr_t *)NULL ,
+                                      my_thread ,
+                                      &tasks[j]);
+    }  
+     
+    for(i = 0; i < ThreadsCount; i++)
     {
-        u[i] = (h[i] - x) * (h[i] - x) * o[i];
-        u[0] = u[0] + u[i];
+        pthread_join(threads[i].id , (void **) NULL);
+    }
+      
+    
+    for (i = 0; i <= ThreadsCount; i++)
+    {
+        m[ThreadsCount + 1] = m[ThreadsCount + 1] + m[i];
     } 
-    m[0] = m[0] / n;
-    u[0] = u[0] / n;
-    u[0] = sqrt(u[0]);
-    printf("Среднее значение = %f\n" , m[0]);
-    printf("Дисперсия = %f\n" , u[0]);
+  
+    
+    m[ThreadsCount + 1] = m[ThreadsCount + 1] / ElementsCount;
+    
+    
+    for(j = 0; j <= ThreadsCount; j++)
+    {
+        threads[j].result = pthread_create(&(threads[j].id) ,
+                                     (pthread_attr_t *)NULL ,
+                                      my_thread1 ,
+                                      &tasks[j]);
+    }  
+     
+    for(i = 0; i < ThreadsCount; i++)
+    {
+        pthread_join(threads[i].id , (void **) NULL);
+    }
+   
+    for (i = 0; i <= ThreadsCount; i++)
+    {
+        o[ThreadsCount + 1] = o[ThreadsCount + 1] + o[i];
+    }
+    
+    
+    o[ThreadsCount + 1] = o[ThreadsCount + 1] / ElementsCount;
+    
+    
+    printf("Среднее значение = %f\n" , m[ThreadsCount + 1]);
+    printf("Дисперсия = %f\n" , o[ThreadsCount + 1]);
     return 0;
 }
