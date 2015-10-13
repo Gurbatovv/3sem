@@ -8,19 +8,13 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-/*
- * Название константы.
- */
-#define n 5000
+#define SIZE 2000
 
 int main()
 {
     char    *array;
-    int     shmid, i;
-    /*
-     * Если не используете переменные, то удаляйте их.
-     */
-    int     new = 1;
+    int     shmid;
+      
     const char pathname[] = "01a.c";
     key_t   key;
 
@@ -30,11 +24,8 @@ int main()
         exit(-1);
     }
    
-    /*
-     * Как так? Вы получаете дескриптор, записываете в переменную, потом затираете эту переменную новым значением.
-     */
-    shmid = shmget(key, 2500 * sizeof(int), 0666 | IPC_CREAT | IPC_EXCL);
-    shmid = shmget(key, 3 * sizeof(int), 0);
+   
+    shmid = shmget(key, SIZE * sizeof(char), 0);
     
     array = (char *)shmat(shmid, NULL, 0);
     

@@ -7,12 +7,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <string.h>
 
-/*
- * Старайтесь называть переменные так, чтобы из названия было ясно, зачем она нужна:
- * MAX_FILE_SIZE
- */
-#define n 5000
+#define MAX_FILE_SIZE 5000
+#define SIZE 5000
+
 
 int main()
 {
@@ -28,36 +27,24 @@ int main()
    }
    
    char *s;
-   /*
-    * Форматирование: пробелы вокруг бинарных операций.
-    */
-   s = (char *)malloc(n*sizeof(char));
+   s = (char *)malloc(MAX_FILE_SIZE * sizeof(char));
    int fd;
-   /*
-    * Форматирование: пробел после запятой.
-    */
-   fd = open("01a.c",O_RDONLY);
-   for (i = 0; i < n; i++)
+   
+   fd = open("01a.c", O_RDONLY);
+   for (i = 0; i < MAX_FILE_SIZE; i++)
    {
-       /*
-        * Это нужно делать с помощью цикла while
-        */
        read (fd, &(s[i]), 1);
+       
    }
 
-   /*
-    * Магическое число 2500. Нужно объявить соответствующую константу.
-    * Почему sizeof(int)? Вам же нужен массив char. Возможно вы и выделите сколько надо, но сторонний человек точно не поймёт, откуда int`ы появились.
-    */
-   if((shmid = shmget(key, 2500 * sizeof(int), 0666 | IPC_CREAT | IPC_EXCL)) < 0){    
+   
+   if((shmid = shmget(key, SIZE * sizeof(char), 0666 | IPC_CREAT | IPC_EXCL)) < 0){    
        if(errno != EEXIST) {         
             printf("Can't create shared memory\n");
             exit(-1);
         } else {
-          /*
-           * Вы явно хотели не 3 написать.
-           */
-          if((shmid = shmget(key, 3 * sizeof(int), 0)) < 0){
+          
+          if((shmid = shmget(key, SIZE * sizeof(char), 0)) < 0){
             printf("Can't find shared memory\n");
             exit(-1);
          }
@@ -69,18 +56,10 @@ int main()
       printf("Can't attach shared memory\n");
       exit(-1);
    }
-   /*
-    * Вместо этого цикла воспользуйтесь ф-ей memcpy.
-    */
-   for (i = 0; i < n; i++)
-   {
-       array[i] = s[i];       
-   }
-   /*
-    * Уверены?
-    * Нужно ведь просто
-    * close(fd);
-    */
-   int close(int fd);
+   
+   memcpy (array, s, SIZE * sizeof(char));
+   printf("%s", array);   
+   close(fd);
+    
 }   
    
