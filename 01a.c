@@ -31,6 +31,9 @@ int main()
    int fd;
    
    fd = open("01a.c", O_RDONLY);
+   
+   /* Я не понял, как здесь заменить for на while?*/
+   
    for (i = 0; i < MAX_FILE_SIZE; i++)
    {
        read (fd, &(s[i]), 1);

@@ -4,68 +4,52 @@
 #include <malloc.h>
 #include <time.h>
 
-/*
- * Обязательно сами тестируйте свои программы на разных значениях входных параметров:
- * ElementsCount, ThreadsCount, все элементы равны + то, как у вас сейчас.
- */
 
-#define ElementsCount 1000
+
+#define ElementsCount 100000
 #define ThreadsCount  4
 
-double *a;
-long int j;
-/*
- * Странно, что у вас массивы на 1 больше, чем нужно.
- * 
- * Немного странные название. Понятно, что "a" означало array.
- * Что означают m и o - загадка. Можно воспользоваться переменной result структуры Task, тогда ясно, что это результат работы данной нити.
- */
-double m[ThreadsCount + 1];
-double o[ThreadsCount + 1];
+long double *array;
+
+long double sum[ThreadsCount];
+long double disp[ThreadsCount];
+long double average;
   
 struct Task
 {
-  int b, c;
-  /*
-   * Вам нужно добавить сюда индекс задачи index, чтобы каждый поток знал, куда ему писать результат.
-   */
+  int b, a, index;
+  
 };
 
 struct Thread
 {
   pthread_t id;
-  int result;
-  /*
-   * Вы создали переменную result по аналогии с программой Дарьи. Но в неё писала результат работы каждого потока.
-   * У вас для этого заведены массивы m, o.
-   */
 };
 
 
 void* my_thread(void* task) 
 {
     long int i;
-    for(i = ((struct Task*)task) -> c; i < ((struct Task*)task) -> b; i++)
+    long double summa = 0;
+    pthread_t my_thread_id;
+    for(i = ((struct Task*)task) -> a; i < ((struct Task*)task) -> b; i++)
     {
-        /*
-         * Нужно суммировать в элемент массива task->index. Вы же фактически суммировали в одну ячейку массива m[ThreadsCount] результаты всех потоков.
-         */
-        m[j] = m[j] + a[i]; 
+       
+        summa = summa + array[i]; 
     } 
-    return NULL;
+    sum[((struct Task*)task)->index] = summa;
 }
 
 void* my_thread1(void* task) 
 {
     long int i;
+    long double summa = 0;
     pthread_t my_thread_id;
-    for (i = ((struct Task*)task) -> c; i < ((struct Task*)task) -> b; i++)
+    for (i = ((struct Task*)task) -> a; i < ((struct Task*)task) -> b; i++)
     {
-      /*
-       * Та, же беда с j.
-       */
-        o[j] = o[j] + (a[i] - m[ThreadsCount + 1]) * (a[i] - m[ThreadsCount + 1]);
+        summa = summa + (array[i] - average) * (array[i] - average);
     } 
+    disp[((struct Task*)task)->index] = summa;
     return NULL;
 }
 
@@ -79,7 +63,8 @@ int main()
 
     for(i = 0; i < ThreadsCount; i++)
     {
-        tasks[i].c =  i      * ElementsCount / ThreadsCount;
+        tasks[i].index = i;
+        tasks[i].a =  i * ElementsCount / ThreadsCount;
         tasks[i].b = (i + 1) * ElementsCount / ThreadsCount;
     }
 
@@ -88,24 +73,21 @@ int main()
         tasks[ThreadsCount - 1].b = ElementsCount;
     }
 
-    a = (double *)malloc(ElementsCount * sizeof(double));
+    array = (long double *)malloc(ElementsCount * sizeof(long double));
     
     for (i = 0; i < ElementsCount; i++)
-    a[i] = 1 + rand() % 2;  
+    array[i] = 1 + rand() % 2;  
     
-    /*
-     * Когда будете тестировать программу на большом числе элементов или измерять производительность, то
-     * вывод на экран надо закомментировать, т.к. он потребует больше времени, чем расчёт среднего и дисперсии.
-     */
-    /*
-    printf("Данные: ");
+   
+    
+    /*printf("Данные: ");
     
     for (i = 0; i < ElementsCount; i++)
     {
-        printf("%f " , a[i]);
+        printf("%Lf " , array[i]);
     }
-    printf("\n");
-    */
+    printf("\n");*/
+    
     
     /*
      * Видимо, здесь должно быть условие j < ThreadsCount, т.к. нумерация с 0.
@@ -113,7 +95,7 @@ int main()
     
     clock_t startTime = clock();
     
-    for(j = 0; j <= ThreadsCount; j++)
+    for(i = 0; i < ThreadsCount; i++)
     {
       /*
        * Так делать нельзя. У вас j - глобальная переменная, для всех нитей, имеющая одно и то же значение.
@@ -122,10 +104,10 @@ int main()
        * Ваши ThreadsCount нитей "быстро" создаются, начинают работать, и пишут результат фактически в одну и ту же ячейку j == ThreadsCount.
        * Как мы с вами видели на семинаре это приводит к условию гонки, и результат будет некорректный. 
        */
-        threads[j].result = pthread_create(&(threads[j].id) ,
+        sum[i] = pthread_create(&(threads[i].id) ,
                                      (pthread_attr_t *)NULL ,
                                       my_thread ,
-                                      &tasks[j]);
+                                      &tasks[i]);
     }  
      
     for(i = 0; i < ThreadsCount; i++)
@@ -134,21 +116,27 @@ int main()
     }
       
     
-    for (i = 0; i <= ThreadsCount; i++)
+    for (i = 0; i < ThreadsCount; i++)
     {
-        m[ThreadsCount + 1] = m[ThreadsCount + 1] + m[i];
+       sum[ThreadsCount] = sum[ThreadsCount] + sum[i];
     } 
   
-    
-    m[ThreadsCount + 1] = m[ThreadsCount + 1] / ElementsCount;
-    
-    
-    for(j = 0; j <= ThreadsCount; j++)
+    /*for (i = 0; i <= ThreadsCount; i++)
     {
-        threads[j].result = pthread_create(&(threads[j].id) ,
+        printf("%Lf " , sum[i]);
+    }
+    printf("\n");
+    
+    sum[ThreadsCount] = sum[ThreadsCount] / ElementsCount;
+    average = sum[ThreadsCount];
+    printf("%Lf \n" , sum[ThreadsCount]);*/
+    
+    for(i = 0; i < ThreadsCount; i++)
+    {
+        disp[i] = pthread_create(&(threads[i].id) ,
                                      (pthread_attr_t *)NULL ,
                                       my_thread1 ,
-                                      &tasks[j]);
+                                      &tasks[i]);
     }  
      
     for(i = 0; i < ThreadsCount; i++)
@@ -156,13 +144,13 @@ int main()
         pthread_join(threads[i].id , (void **) NULL);
     }
    
-    for (i = 0; i <= ThreadsCount; i++)
+    for (i = 0; i < ThreadsCount; i++)
     {
-        o[ThreadsCount + 1] = o[ThreadsCount + 1] + o[i];
+        disp[ThreadsCount] = disp[ThreadsCount] + disp[i];
     }
     
     
-    o[ThreadsCount + 1] = o[ThreadsCount + 1] / ElementsCount;
+   disp[ThreadsCount] = disp[ThreadsCount] / ElementsCount;
     
     /*
      * Следующая пара строк измеряет затрачиваемое на расчёт время.
@@ -172,11 +160,12 @@ int main()
      * Также время работы можно измерять с помощью системной утилиты time:
      * time ./a.out
      */
-    clock_t endTime = clock();
-    printf("Time elapsed: %f\n", (double)(endTime - startTime) / CLOCKS_PER_SEC);
     
-    printf("Среднее значение = %f\n" , m[ThreadsCount + 1]);
-    printf("Дисперсия = %f\n" , o[ThreadsCount + 1]);
+    clock_t endTime = clock();
+    printf("Time elapsed: %Lf\n", (long double)(endTime - startTime) / CLOCKS_PER_SEC);
+    
+    printf("Среднее значение = %Lf\n" , sum[ThreadsCount]);
+    printf("Дисперсия = %Lf\n" , disp[ThreadsCount]);
     return 0;
 }
 
