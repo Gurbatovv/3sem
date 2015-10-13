@@ -12,7 +12,6 @@
 #define MAX_FILE_SIZE 5000
 #define SIZE 5000
 
-
 int main()
 {
    char     *array;
@@ -34,13 +33,18 @@ int main()
    
    /* Я не понял, как здесь заменить for на while?*/
    
+   /*
+    * while (read (fd, &(s[i]), 1) > 0 && i < MAX_FILE_SIZE)
+    * {
+    *   ++i;
+    * }
+    */
+   
    for (i = 0; i < MAX_FILE_SIZE; i++)
    {
        read (fd, &(s[i]), 1);
-       
    }
 
-   
    if((shmid = shmget(key, SIZE * sizeof(char), 0666 | IPC_CREAT | IPC_EXCL)) < 0){    
        if(errno != EEXIST) {         
             printf("Can't create shared memory\n");
@@ -63,6 +67,5 @@ int main()
    memcpy (array, s, SIZE * sizeof(char));
    printf("%s", array);   
    close(fd);
-    
 }   
    
