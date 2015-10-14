@@ -11,7 +11,7 @@ long double *array;
 
 long double sum[ThreadsCount];
 long double disp[ThreadsCount];
-long double average;
+long double average, dispersion;
   
 struct Task
 {
@@ -29,25 +29,25 @@ void* my_thread(void* task)
     /*
      * Не используйте транслит, просто sum.
      */
-    long double summa = 0;
+    long double sum1 = 0;
     pthread_t my_thread_id;
     for(i = ((struct Task*)task) -> a; i < ((struct Task*)task) -> b; i++)
     {
-        summa = summa + array[i]; 
+        sum1 = sum1 + array[i]; 
     } 
-    sum[((struct Task*)task)->index] = summa;
+    sum[((struct Task*)task)->index] = sum1;
 }
 
 void* my_thread1(void* task) 
 {
     long int i;
-    long double summa = 0;
+    long double sum2 = 0;
     pthread_t my_thread_id;
     for (i = ((struct Task*)task) -> a; i < ((struct Task*)task) -> b; i++)
     {
-        summa = summa + (array[i] - average) * (array[i] - average);
+        sum2 = sum2 + (array[i] - average) * (array[i] - average);
     } 
-    disp[((struct Task*)task)->index] = summa;
+    disp[((struct Task*)task)->index] = sum2;
     return NULL;
 }
 
@@ -109,18 +109,10 @@ int main()
      */
     for (i = 0; i < ThreadsCount; i++)
     {
-       sum[ThreadsCount] = sum[ThreadsCount] + sum[i];
+       average = average + sum[i];
     } 
-  
-    /*for (i = 0; i <= ThreadsCount; i++)
-    {
-        printf("%Lf " , sum[i]);
-    }
-    printf("\n");
     
-    sum[ThreadsCount] = sum[ThreadsCount] / ElementsCount;
-    average = sum[ThreadsCount];
-    printf("%Lf \n" , sum[ThreadsCount]);*/
+    average = average / ElementsCount;
     
     for(i = 0; i < ThreadsCount; i++)
     {
@@ -138,13 +130,13 @@ int main()
     /*
      * Аналогично про индексацию массивов
      */
-    for (i = 0; i < ThreadsCount; i++)
+    for (i = 0; i < ThreadsCount - 1; i++)
     {
-        disp[ThreadsCount] = disp[ThreadsCount] + disp[i];
+        dispersion = dispersion + disp[i];
     }
     
     
-   disp[ThreadsCount] = disp[ThreadsCount] / ElementsCount;
+    dispersion = dispersion / ElementsCount;
     
     /*
      * Также время работы можно измерять с помощью системной утилиты time:
@@ -154,7 +146,7 @@ int main()
     clock_t endTime = clock();
     printf("Time elapsed: %Lf\n", (long double)(endTime - startTime) / CLOCKS_PER_SEC);
     
-    printf("Среднее значение = %Lf\n" , sum[ThreadsCount]);
-    printf("Дисперсия = %Lf\n" , disp[ThreadsCount]);
+    printf("Среднее значение = %Lf\n" , average);
+    printf("Дисперсия = %Lf\n" , dispersion);
     return 0;
 }
