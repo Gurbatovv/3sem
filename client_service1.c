@@ -8,6 +8,8 @@
 
 #define A 10 
 #define B 5 
+#define LAST_MESSAGE 255
+#define N 3
 
 int main()
 {
@@ -56,7 +58,7 @@ int main()
     printf("Can\'t get msqid\n");
     exit(-1);
   }
-
+  
     mybuf.mtype = 1;
     mybuf.info.a = A;
     mybuf.info.b = B;
@@ -71,6 +73,16 @@ int main()
       exit(-1);
     }
     
+  mybuf.mtype = LAST_MESSAGE;
+  len = 81;
+  if (msgsnd(msqid, (struct msgbuf*)&mybuf, len, 0) < 0)
+  {
+    printf("Can\'t send message to queue\n");
+    msgctl(msqid, IPC_RMID, (struct msqid_ds*)NULL);
+    exit(-1);
+  }
+    
+    
     maxlen = sizeof(mybuf.info);
 
     /*
@@ -79,7 +91,7 @@ int main()
      * то, что нам предназначается. Вы же излекаете из очереди сообщение с типом 2, т.е. есть все шансы считать чужое сообщение.    
      */
     
-    if ((len = msgrcv(msqid, (struct msgbuf *)&mybuf, maxlen, 2, 0)) < 0)
+    if ((len = msgrcv(msqid, (struct msgbuf *)&mybuf, maxlen, mybuf.info.id, 0)) < 0)
     {
       printf("Can\'t receive message from queue\n");
       exit(-1);

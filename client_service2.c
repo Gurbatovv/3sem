@@ -6,7 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 2
+#define N 3
+#define LAST_MESSAGE 255
 
 int main()
 {
@@ -74,6 +75,11 @@ int main()
     /* В бесконечном цикле принимаем сообщения любого типа в порядке FIFO с 
      * максимальной длиной информативной части 81 символ до тех пор, пока не 
      * поступит сообщение с типом LAST_MESSAGE */
+    mybufs.sem_op = N; 
+    mybufs.sem_flg = 0;
+    mybufs.sem_num = 0;
+    semop(semid, &mybufs, 1);
+    
   while (1)
   {
     maxlen = sizeof(mybuf.info);
@@ -84,6 +90,14 @@ int main()
       exit(-1);
     }
     
+    if (mybuf.mtype == LAST_MESSAGE)
+    {
+      msgctl(msqid, IPC_RMID, (struct msqid_ds *)NULL);
+      exit(0);
+    }
+
+    //printf("message type = %ld, info = %d\n, %d, id %d\n", mybuf.mtype, mybuf.info.a, mybuf.info.b, mybuf.info.id);
+  
 
     /*
      * FIXIT:
@@ -93,13 +107,8 @@ int main()
      * Когда вы запускаете новую задачу, то должны уменьшить на 1 это значение.
      * Когда дочерний процесс доработал до конца, надо увеличить это значение на 1.
      */
-    mybufs.sem_op = N; 
-    mybufs.sem_flg = 0;
-    mybufs.sem_num = 0;
     
-    semop(semid, &mybufs, 1);
-    
-    pid_t pid = fork();
+    int pid = fork();
 
     if(pid == 0)
     {
@@ -107,12 +116,13 @@ int main()
       mybufs.sem_op = -1; 
       mybufs.sem_flg = 0;
       mybufs.sem_num = 0;
+      semop(semid, &mybufs, 1);
 
       if(semop(semid, &mybufs, 1) < 0)
       {
         printf("Can't wait for condition\n");
       }
-    }
+    
     
     /*
      * FIXIT:
@@ -123,8 +133,9 @@ int main()
     int m = 0;
     m = mybuf.info.a * mybuf.info.b;
     
-    mybuf.mtype = 2;
-    mybuf.info.result = m;
+    mybuf.info.result = m;    
+    
+    mybuf.mtype = mybuf.info.id;
     len = sizeof(mybuf.info);
         if (msgsnd(msqid, (struct msgbuf *) &mybuf, len, 0) < 0)
     {
@@ -132,6 +143,12 @@ int main()
       msgctl(msqid, IPC_RMID, (struct msqid_ds*)NULL);
       exit(-1);
     }
+    mybufs.sem_op = 1;
+    mybufs.sem_flg = 0;
+    mybufs.sem_num = 0;
+    semop(semid, &mybufs, 1);
+    exit(0);
+  }
   }
   
   return 0;
