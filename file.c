@@ -8,10 +8,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define NAME 256
+#define NAME 1024
 #define MAX_PATH  1024
 
-int Search_files(char *file_name, char *dir_name, int depth)
+int Search_files(char* dir_name, int depth, char* file_name)
 {
     DIR* dir;
     struct dirent* use;
@@ -32,6 +32,7 @@ int Search_files(char *file_name, char *dir_name, int depth)
         {
             dir_name = strcat(dir_name, "/");
             dir_name = strcat(dir_name, use->d_name);
+            return 0;
         }
 
         /*
@@ -41,6 +42,8 @@ int Search_files(char *file_name, char *dir_name, int depth)
         {
             dir_name = strcat(dir_name, "/");
             dir_name = strcat(dir_name, use->d_name);
+            if (Search_files(dir_name, depth - 1, file_name) >= 0)
+            return 0;
         }
     }
     return -1;
@@ -60,7 +63,7 @@ int main(int argc, char *argv[])
      * Возможно, как-то неверно запускаю.
      */
     
-    if (Search_files(s, path, depth) >= 0)
+    if (Search_files(path, depth, s) >= 0)
     {
         printf("%s\n", path);
     }
