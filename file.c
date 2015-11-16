@@ -41,6 +41,16 @@ int Search_files(char* dir_name, int depth, char* file_name)
             if (Search_files(dir_name, depth - 1, file_name) >= 0)
                 return 0;
             char *str = strchr(dir_name, '/');
+	    /*
+	     * FIXIT:
+	     * данная ф-я ищет вхождение первого символа в строку.
+	     * http://cppstudio.com/post/726/
+	     * а нужно последнее вхождение найти
+	     * +
+	     * неплохо бы проверять, что str != NULL.
+	     * 
+	     * Делая так, вы не полностью обойдёте дерево файловой системы и можете не найти нужный файл.
+	     */
             *str = '\0';
 	    /*
 	     * Как работает поиск в глубину? Вы находитесь в некоторой директории "dir". 
