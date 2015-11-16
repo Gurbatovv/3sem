@@ -3,6 +3,12 @@
 #include <stdio.h>
 #include <malloc.h>
 
+/*
+ * Засчитано. Но...
+ * 1) Называйте константы единообразно, например, так SIZE_STR, SIZE_DELIM ...
+ * 2) Называйте переменные со строчной буквы (у вас иногда проскакивает с заглавной int Num)
+ */
+
 #define  SizeStr 117
 #define  SizeDelim  17
 #define Word_number 100
