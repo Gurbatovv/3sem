@@ -25,7 +25,6 @@ int Search_files(char* dir_name, int depth, char* file_name)
     {
         return -1;
     }
-
     while ((use = readdir(dir)) != NULL)
     {
         if (strcmp(file_name, use->d_name) == 0)
@@ -40,7 +39,9 @@ int Search_files(char* dir_name, int depth, char* file_name)
             dir_name = strcat(dir_name, "/");
             dir_name = strcat(dir_name, use->d_name);
             if (Search_files(dir_name, depth - 1, file_name) >= 0)
-            return 0;
+                return 0;
+            char *str = strchr(dir_name, '/');
+            *str = '\0';
 	    /*
 	     * Как работает поиск в глубину? Вы находитесь в некоторой директории "dir". 
 	     * Внутри неё ещё несколько "dir1", "dir2" ... "dirN". 
